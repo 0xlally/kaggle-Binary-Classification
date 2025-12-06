@@ -5,9 +5,10 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 import pandas as pd
+import joblib  # 用于保存模型
 
 # 读取训练集数据
-# 注意：这里的路径 'playground-series-s5e8.zip/train.csv' 需要根据你实际文件的位置修改
+# 注意：这里的路径 '../data/train.csv' 需要根据你实际文件的位置修改
 train_df = pd.read_csv('../data/train.csv')
 
 # --- 1. 准备数据 ---
@@ -58,3 +59,13 @@ scores = cross_val_score(clf, X, y, cv=cv, scoring='roc_auc', n_jobs=-1)
 # --- 6. 输出结果 ---
 print(f"\n每折的 AUC 分数:\n{scores}")
 print(f"\n>>> 平均 AUC: {scores.mean():.5f} (标准差: {scores.std():.5f})")
+
+# --- 7. 在全部训练数据上训练最终模型 ---
+print("\n训练最终模型...")
+clf.fit(X, y)
+print("模型训练完成！")
+
+# --- 8. 保存模型 ---
+model_path = 'logistic_regression_model.pkl'
+joblib.dump(clf, model_path)
+print(f"\n模型已保存到: {model_path}")
