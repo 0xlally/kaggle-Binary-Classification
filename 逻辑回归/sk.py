@@ -26,7 +26,7 @@ numeric_transformer = Pipeline(steps=[
     ('scaler', StandardScaler())
 ])
 
-# 类别列处理：最频繁值填充缺失值 + One-Hot编码 (遇到新类别忽略)
+# 类别列处理：unknown填充缺失值 + One-Hot编码 (遇到新类别忽略)
 categorical_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='constant', fill_value='unknown')), # 保持 unknown 为一类
     ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
