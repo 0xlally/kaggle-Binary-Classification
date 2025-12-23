@@ -3,9 +3,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
 import pandas as pd
 import joblib  # 用于保存模型
+
+from custom_logistic import CustomLogisticRegression
 
 # 读取训练集数据
 # 注意：这里的路径 '../data/train.csv' 需要根据你实际文件的位置修改
@@ -39,9 +40,17 @@ preprocessor = ColumnTransformer(
         ('cat', categorical_transformer, categorical_features)
     ])
 
-# --- 3. 定义逻辑回归模型 ---
-# max_iter=2000 保证有足够时间收敛，C=1.0 是正则化强度默认值
-model = LogisticRegression(max_iter=2000, random_state=42, C=1.0, solver='lbfgs')
+# --- 3. 定义自实现逻辑回归模型 ---
+# 使用手写梯度下降版，避免直接依赖 sklearn 的 LogisticRegression
+model = CustomLogisticRegression(
+    lr=0.05,
+    max_iter=2000,
+    C=1.0,
+    penalty='l2',
+    class_weight=None,
+    fit_intercept=True,
+    tol=1e-4,
+)
 
 # --- 4. 构建最终管道 ---
 clf = Pipeline(steps=[('preprocessor', preprocessor),
@@ -66,6 +75,6 @@ clf.fit(X, y)
 print("模型训练完成！")
 
 # --- 8. 保存模型 ---
-model_path = 'logistic_regression_model.pkl'
+model_path = 'custom_logistic_regression.pkl'
 joblib.dump(clf, model_path)
 print(f"\n模型已保存到: {model_path}")

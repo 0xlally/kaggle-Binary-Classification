@@ -6,11 +6,16 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, KBinsDiscretizer
 from sklearn.impute import SimpleImputer
-from sklearn.linear_model import LogisticRegression
+
+from custom_logistic import CustomLogisticRegression
 
 # 1. 读取数据
 # 请确保路径正确
-train_df = pd.read_csv('../data/train.csv')
+try:
+    train_df = pd.read_csv('../data/train.csv')
+except FileNotFoundError:
+    # 备用路径，防止报错
+    train_df = pd.read_csv('playground-series-s5e8.zip/train.csv')
 
 # ==========================================
 #  函数：特征工程 (Feature Engineering)
@@ -20,7 +25,14 @@ def feature_engineering(df):
     df_eng = df.copy()
     
     # 1. 处理 pdays (-1 代表从未联系)
+    # 先生成标记特征
     df_eng['was_contacted'] = (df_eng['pdays'] != -1).astype(int)
+    
+    # 【关键修改】处理“毒数据”
+    # 将 -1 替换为 0。这样 pdays 就变成了纯粹的“天数”含义。
+    # 逻辑回归会学到：如果 was_contacted=0，pdays的权重不重要；
+    # 如果 was_contacted=1，pdays 越大越...
+    df_eng['pdays'] = df_eng['pdays'].replace(-1, 0)
     
     # 2. 交互特征: 总负债状况
     housing_num = df_eng['housing'].map({'yes': 1, 'no': 0, 'unknown': 0})
@@ -30,7 +42,7 @@ def feature_engineering(df):
     return df_eng
 
 # 对训练集应用特征工程
-print("正在进行特征工程...")
+print("正在进行特征工程 (已修复 pdays -1 问题)...")
 train_df_eng = feature_engineering(train_df)
 
 # ==========================================
@@ -53,9 +65,15 @@ numeric_transformer = Pipeline(steps=[
 ])
 
 # 年龄分箱 (把年龄变成类别，捕捉非线性)
+# 加上 quantile_method 消除警告
 age_transformer = Pipeline(steps=[
     ('imputer', SimpleImputer(strategy='median')),
-    ('binning', KBinsDiscretizer(n_bins=10, encode='onehot', strategy='quantile'))
+    ('binning', KBinsDiscretizer(
+        n_bins=10, 
+        encode='onehot', 
+        strategy='quantile', 
+        quantile_method='averaged_inverted_cdf'
+    ))
 ])
 
 # 类别处理
@@ -72,13 +90,15 @@ preprocessor = ColumnTransformer(
         ('cat', categorical_transformer, categorical_features) # 类别
     ])
 
-# 定义逻辑回归模型 (带 class_weight='balanced')
-model = LogisticRegression(
-    max_iter=3000, 
-    C=0.1, 
-    solver='lbfgs',
-    class_weight='balanced', # 关键参数
-    random_state=42
+# 定义自实现逻辑回归模型 (带 class_weight='balanced')
+model = CustomLogisticRegression(
+    lr=0.05,
+    max_iter=3000,
+    C=0.1,
+    penalty='l2',
+    class_weight='balanced',
+    fit_intercept=True,
+    tol=1e-4,
 )
 
 # 最终管道
@@ -105,7 +125,7 @@ print("模型训练完成！")
 # ==========================================
 #  步骤 3: 保存模型
 # ==========================================
-model_filename = 'logistic_regression_optimized.pkl'
+model_filename = 'custom_logistic_regression_optimized.pkl'
 joblib.dump(clf, model_filename)
 print(f"模型已成功保存为: {model_filename}")
 
@@ -115,7 +135,10 @@ print(f"模型已成功保存为: {model_filename}")
 print("\n--- 模拟预测 Test 集流程 ---")
 
 # 1. 读取 Test 数据
-test_df = pd.read_csv('../data/test.csv')
+try:
+    test_df = pd.read_csv('../data/test.csv')
+except FileNotFoundError:
+    test_df = pd.read_csv('playground-series-s5e8.zip/test.csv')
 
 # 2. 重要！必须对 Test 集做同样的特征工程
 test_df_eng = feature_engineering(test_df)
@@ -136,4 +159,5 @@ submission = pd.DataFrame({
 print("预测完成，前 5 行预览：")
 print(submission.head())
 
-submission.to_csv('submission2.csv', index=False)
+submission.to_csv('submission4.csv', index=False)
+print("submission4.csv 已生成！")

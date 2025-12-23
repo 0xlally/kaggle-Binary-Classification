@@ -4,8 +4,8 @@ import joblib
 # 1. 读取 Test 数据
 test_df = pd.read_csv('../data/test.csv')
 
-# 2. 加载之前训练好的模型
-model = joblib.load('logistic_regression_model.pkl')
+# 2. 加载之前训练好的模型（自实现逻辑回归 + 预处理管道）
+model = joblib.load('./logistic_regression_optimized.pkl')
 
 # ==========================================
 #  关键步骤：必须对 Test 集做一模一样的特征工程
@@ -42,5 +42,5 @@ submission = pd.DataFrame({
 print(submission.head())
 
 # 5. 保存
-submission.to_csv('submission.csv', index=False)
-print("提交文件 submission.csv 已生成！")
+submission.to_csv('submission5.csv', index=False)
+print("提交文件 submission5.csv 已生成！")

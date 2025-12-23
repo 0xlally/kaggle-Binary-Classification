@@ -3,7 +3,7 @@ import joblib
 
 # --- 1. 加载保存的模型 ---
 print("加载模型...")
-model_path = 'logistic_regression_model.pkl'
+model_path = 'custom_logistic_regression.pkl'
 clf = joblib.load(model_path)
 print("模型加载完成！")
 
